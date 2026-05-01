@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHUSHWANT FPS - Multiplayer Battle</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Main Game Container -->
+    <div id="gameContainer"></div>
+
+    <!-- HUD (Heads Up Display) -->
+    <div id="hud" class="hud">
+        <!-- Health Bar -->
+        <div class="health-bar">
+            <div id="healthFill" class="health-fill"></div>
+            <span id="healthText">100 / 100</span>
+        </div>
+
+        <!-- Ammo Counter -->
+        <div class="ammo-counter">
+            <span id="ammoText">30 / 120</span>
+        </div>
+
+        <!-- Player Count -->
+        <div class="player-count">
+            <span id="playerCountText">Players: 1</span>
+        </div>
+
+        <!-- FPS Counter -->
+        <div class="fps-counter">
+            <span id="fpsText">FPS: 60</span>
+        </div>
+
+        <!-- Minimap -->
+        <canvas id="minimap" class="minimap"></canvas>
+
+        <!-- Crosshair -->
+        <div class="crosshair"></div>
+
+        <!-- Kill Feed -->
+        <div id="killFeed" class="kill-feed"></div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="mobileControls" class="mobile-controls" style="display: none;">
+        <!-- Left Joystick -->
+        <div id="joystickContainer" class="joystick-container">
+            <div id="joystickBg" class="joystick-bg">
+                <div id="joystickStick" class="joystick-stick"></div>
+            </div>
+        </div>
+
+        <!-- Right Side Buttons -->
+        <div class="button-group right-side">
+            <button id="fireBtn" class="action-button fire-button" data-action="fire">FIRE</button>
+            <button id="aimBtn" class="action-button aim-button" data-action="aim">AIM</button>
+            <button id="reloadBtn" class="action-button reload-button" data-action="reload">R</button>
+        </div>
+
+        <!-- Bottom Center Buttons -->
+        <div class="button-group bottom-center">
+            <button id="jumpBtn" class="action-button jump-button" data-action="jump">JUMP</button>
+            <button id="crouchBtn" class="action-button crouch-button" data-action="crouch">CROUCH</button>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="menu">
+        <div class="menu-container">
+            <h1 class="menu-title">⚔️ KHUSHWANT FPS</h1>
+            <p class="menu-subtitle">Cross-Platform Multiplayer Battle</p>
+            
+            <div class="menu-buttons">
+                <button id="playBtn" class="menu-button">Play</button>
+                <button id="settingsBtn" class="menu-button">Settings</button>
+                <button id="friendsBtn" class="menu-button">Friends & Party</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseMenu" class="menu" style="display: none;">
+        <div class="menu-container">
+            <h1 class="menu-title">⏸️ PAUSED</h1>
+            
+            <div class="menu-buttons">
+                <button id="resumeBtn" class="menu-button">Resume Game</button>
+                <button id="settingsFromGameBtn" class="menu-button">Settings</button>
+                <button id="leaveGameBtn" class="menu-button danger">Leave Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Menu -->
+    <div id="settingsMenu" class="menu" style="display: none;">
+        <div class="menu-container settings-menu">
+            <h1 class="menu-title">⚙️ SETTINGS</h1>
+            
+            <div class="settings-tabs">
+                <button class="tab-button active" data-tab="controls">Controls</button>
+                <button class="tab-button" data-tab="graphics">Graphics</button>
+                <button class="tab-button" data-tab="audio">Audio</button>
+            </div>
+
+            <!-- Controls Tab -->
+            <div id="controlsTab" class="tab-content active">
+                <h2>PC Keybinds</h2>
+                <div class="keybind-list">
+                    <div class="keybind-item">
+                        <label>Move Forward</label>
+                        <input type="text" class="keybind-input" data-key="moveForward" value="W" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Move Left</label>
+                        <input type="text" class="keybind-input" data-key="moveLeft" value="A" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Move Backward</label>
+                        <input type="text" class="keybind-input" data-key="moveBackward" value="S" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Move Right</label>
+                        <input type="text" class="keybind-input" data-key="moveRight" value="D" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Jump</label>
+                        <input type="text" class="keybind-input" data-key="jump" value="Space" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Crouch</label>
+                        <input type="text" class="keybind-input" data-key="crouch" value="C" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Sprint</label>
+                        <input type="text" class="keybind-input" data-key="sprint" value="Shift" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Fire</label>
+                        <input type="text" class="keybind-input" data-key="fire" value="Mouse1" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Aim / Scope</label>
+                        <input type="text" class="keybind-input" data-key="aim" value="Mouse2" readonly>
+                    </div>
+                    <div class="keybind-item">
+                        <label>Reload</label>
+                        <input type="text" class="keybind-input" data-key="reload" value="R" readonly>
+                    </div>
+                </div>
+
+                <h2>Mobile Control Layout</h2>
+                <div class="mobile-customize">
+                    <p>Customize button positions and sizes (drag to move, scroll to resize)</p>
+                    <div id="customizeToggle" class="toggle-button">Enable Customize Mode</div>
+                </div>
+            </div>
+
+            <!-- Graphics Tab -->
+            <div id="graphicsTab" class="tab-content">
+                <h2>Graphics Settings</h2>
+                <div class="setting-item">
+                    <label>Brightness</label>
+                    <input type="range" id="brightness" min="0" max="200" value="100">
+                    <span id="brightnessValue">100%</span>
+                </div>
+                <div class="setting-item">
+                    <label>FOV (Field of View)</label>
+                    <input type="range" id="fov" min="45" max="120" value="75">
+                    <span id="fovValue">75°</span>
+                </div>
+                <div class="setting-item">
+                    <label>Render Distance</label>
+                    <input type="range" id="renderDistance" min="100" max="1000" value="500">
+                    <span id="renderDistanceValue">500m</span>
+                </div>
+            </div>
+
+            <!-- Audio Tab -->
+            <div id="audioTab" class="tab-content">
+                <h2>Audio Settings</h2>
+                <div class="setting-item">
+                    <label>Master Volume</label>
+                    <input type="range" id="masterVolume" min="0" max="100" value="80">
+                    <span id="masterVolumeValue">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label>SFX Volume</label>
+                    <input type="range" id="sfxVolume" min="0" max="100" value="80">
+                    <span id="sfxVolumeValue">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label>Music Volume</label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="50">
+                    <span id="musicVolumeValue">50%</span>
+                </div>
+            </div>
+
+            <button id="backFromSettingsBtn" class="menu-button">Back</button>
+        </div>
+    </div>
+
+    <!-- Friends & Party Menu -->
+    <div id="friendsMenu" class="menu" style="display: none;">
+        <div class="menu-container">
+            <h1 class="menu-title">👥 FRIENDS & PARTY</h1>
+            
+            <div class="friends-container">
+                <div class="friends-section">
+                    <h2>Create Party</h2>
+                    <div id="partyCode" class="party-code">
+                        <span id="generatedCode">LOADING...</span>
+                        <button id="copyCodeBtn" class="copy-button">Copy</button>
+                    </div>
+                    <p class="info-text">Share this code with friends to join your party!</p>
+                </div>
+
+                <div class="friends-section">
+                    <h2>Join Party</h2>
+                    <input type="text" id="joinCodeInput" class="code-input" placeholder="Enter 6-character code" maxlength="6">
+                    <button id="joinPartyBtn" class="menu-button">Join Party</button>
+                </div>
+
+                <div class="friends-section">
+                    <h2>Party Members</h2>
+                    <ul id="partyMembersList" class="members-list">
+                        <li>You</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button id="backFromFriendsBtn" class="menu-button">Back</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="loading-container">
+            <h1>Connecting to Battle...</h1>
+            <div class="loading-spinner"></div>
+            <p id="loadingText">Initializing game...</p>
+        </div>
+    </div>
+
+    <!-- Player List Overlay -->
+    <div id="playerListOverlay" class="player-list-overlay">
+        <div class="player-list-header">
+            <h3>Players in Game</h3>
+        </div>
+        <div id="playerList" class="player-list">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="main.js"></script>
+</body>
+</html>
